@@ -1,0 +1,44 @@
+steps:
+  # 1. Dockerイメージのビルド（コミットSHAタグ）
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:$SHORT_SHA'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:latest'
+      - '.'
+
+  # 2. Artifact Registryへのプッシュ（SHAタグ）
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:$SHORT_SHA'
+
+  # 3. Artifact Registryへのプッシュ（latestタグ）
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:latest'
+
+  # 4. Cloud Runへのデプロイ
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'recognition-rest'
+      - '--image'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:$SHORT_SHA'
+      - '--region'
+      - 'asia-northeast1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:$SHORT_SHA'
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/recognition-repo/recognition-rest:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
